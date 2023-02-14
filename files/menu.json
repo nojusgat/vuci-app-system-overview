@@ -1,0 +1,7 @@
+{
+  "system/overview": {
+    "title": "Overview",
+    "view": "vuci-app-system-overview",
+    "index": 0
+  }
+}
