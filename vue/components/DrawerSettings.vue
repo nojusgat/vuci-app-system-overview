@@ -18,16 +18,14 @@
             :label="card.title"
             :uci-section="s"
             :name="convertTitle(card.title)"
-            initial
+            :initial="false"
             true-value="1"
             false-value="0"
             @change="change"
           />
         </vuci-named-section >
         <template #footer>
-          <div style="display: flex; justify-content: center;">
-            <a-button type="primary" @click="apply">{{ $t('Save & Apply') }}</a-button>
-          </div>
+          <div></div>
         </template>
       </vuci-form>
     </a-drawer>
@@ -52,11 +50,9 @@ export default {
       if (visible) this.$refs.form.load()
     },
     change (input) {
+      this.$refs.form.apply()
       if (!input.model) return this.$emit('remove', input.label)
       this.$emit('add', input.label)
-    },
-    apply () {
-      this.$refs.form.apply()
     },
     convertTitle (title) {
       return title.replaceAll(' ', '_')

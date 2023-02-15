@@ -25,8 +25,12 @@
       <div v-for="section in sections" :key="section.id ? callFunction(section.id) : section.title" class="section">
         <div class="title">{{ callFunction(section.title) }}</div>
         <span v-if="section.components" style="display: flex; gap: 5px;">
-          <component v-for="(component, index) in section.components" :is="component.type" :key="'comp' + index"
-            v-bind="callFunction(component.props)" />
+          <component
+            v-for="(component, index) in section.components"
+            :is="component.type"
+            :key="'comp' + index"
+            v-bind="callFunction(component.props)"
+          />
         </span>
         <span v-else>
           {{ callFunction(section.render) }}

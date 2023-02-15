@@ -76,6 +76,30 @@ export default {
         return info
       })
     },
+    async generateInterfaceCards (orderCount) {
+      const interfaces = await this.$network
+        .load()
+        .then(() => this.$network.getInterfaces())
+
+      return interfaces.map((item, index) => {
+        orderCount += index
+        return {
+          title: 'Interface ' + item.name,
+          sections: [
+            {
+              title: 'Type',
+              render: card => card.info.status.l3_device || 'offline'
+            },
+            {
+              title: 'IP address',
+              render: card => card.info.getIPv4Addrs(true)[0] || 'offline'
+            }
+          ],
+          data: () => this.getInterfaceData(item.name),
+          order: orderCount
+        }
+      })
+    },
     swapCardOrder ({ newTitle, previousTitle }) {
       const previousCard = this.cards.findIndex(card => card.title === previousTitle)
       const newCard = this.cards.findIndex(card => card.title === newTitle)
@@ -157,7 +181,7 @@ export default {
 
       return cardsInfo
     },
-    async getAvailableCards () {
+    async getAvailableCards (orderCount) {
       const cardsInfo = await this.$uci
         .load('system_overview')
         .then(() =>
@@ -168,7 +192,10 @@ export default {
 
       if (cardsInfo.length < 1) return
 
-      return cardsInfo[0].cards
+      return (await Promise.all(cardsInfo[0].cards.map(async card => {
+        if (card === 'interfaceCards') return await this.generateInterfaceCards(orderCount)
+        return this[card]
+      }))).flat()
     }
   },
   computed: {
@@ -214,40 +241,6 @@ export default {
         order: 0
       }
     },
-    lanCard () {
-      return {
-        title: 'Lan',
-        sections: [
-          {
-            title: 'Type',
-            render: card => card.info.status.l3_device || 'offline'
-          },
-          {
-            title: 'IP address',
-            render: card => card.info.getIPv4Addrs(true)[0] || 'offline'
-          }
-        ],
-        data: () => this.getInterfaceData('lan'),
-        order: 1
-      }
-    },
-    wanCard () {
-      return {
-        title: 'Wan',
-        sections: [
-          {
-            title: 'Type',
-            render: card => card.info.status.l3_device || 'offline'
-          },
-          {
-            title: 'IP address',
-            render: card => card.info.getIPv4Addrs(true)[0] || 'offline'
-          }
-        ],
-        data: () => this.getInterfaceData('wan'),
-        order: 2
-      }
-    },
     networkEventsCard () {
       return {
         title: 'Recent network events',
@@ -259,7 +252,7 @@ export default {
           }
         }),
         data: () => this.getEventsData('NETWORK', this.networkEventCount),
-        order: 3
+        order: 1
       }
     },
     systemEventsCard () {
@@ -273,16 +266,16 @@ export default {
           }
         }),
         data: () => this.getEventsData('SYSTEM', this.systemEventCount),
-        order: 4
+        order: 2
       }
     }
   },
   async created () {
-    const availableCards = await this.getAvailableCards()
     const visibility = await this.getCardsVisibility()
     const order = await this.getCardsOrder()
 
-    this.availableCards = availableCards.map(card => this[card])
+    const maxOrder = Math.max(...Object.values(order)) + 1
+    this.availableCards = await this.getAvailableCards(maxOrder)
 
     this.availableCards.forEach((card) => {
       if (visibility[card.title]) {
